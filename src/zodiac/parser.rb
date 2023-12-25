@@ -31,7 +31,7 @@ module Zodiac
         word = ''
 
         while (@cur_index < @raw_string.size) && alpha_num?(cur)
-          word << cur
+          word += cur
           @cur_index += 1
           cur = @raw_string[@cur_index]
         end
