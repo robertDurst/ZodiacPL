@@ -1,5 +1,12 @@
+# frozen_string_literal: true
+
+require './src/zodiac/character_helpers'
+
 module Zodiac
+  # Base parsing class for the Zodiac language.
   class Parser
+    include ::Zodiac::CharacterHelpers
+
     def initialize(raw_string)
       @raw_string = raw_string
       @cur_index = 0
@@ -7,9 +14,7 @@ module Zodiac
     end
 
     def parse
-      while @cur_index < @raw_string.size
-        parse_next
-      end
+      parse_next while @cur_index < @raw_string.size
 
       @tokens
     end
@@ -23,9 +28,9 @@ module Zodiac
         @tokens << cur
         @cur_index += 1
       elsif letter?(cur)
-        word = ""
+        word = ''
 
-        while (@cur_index < @raw_string.size) && (alpha_num?(cur))
+        while (@cur_index < @raw_string.size) && alpha_num?(cur)
           word << cur
           @cur_index += 1
           cur = @raw_string[@cur_index]
@@ -35,22 +40,6 @@ module Zodiac
       else
         @cur_index += 1
       end
-    end
-
-    def symbol?(value)
-      ".:[]{}\"'".include?(value)
-    end
-
-    def alpha_num?(value)
-      letter?(value) || number?(value)
-    end
-
-    def letter?(value)
-      value.match?(/[a-zA-Z]/)
-    end
-
-    def number?(value)
-      value.match?(/[0-9]/)
     end
   end
 end
