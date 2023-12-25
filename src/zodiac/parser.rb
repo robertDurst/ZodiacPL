@@ -22,24 +22,32 @@ module Zodiac
     private
 
     def parse_next
-      cur = @raw_string[@cur_index]
+      @cur = @raw_string[@cur_index]
 
-      if symbol?(cur)
-        @tokens << cur
-        @cur_index += 1
-      elsif letter?(cur)
-        word = ''
-
-        while (@cur_index < @raw_string.size) && alpha_num?(cur)
-          word += cur
-          @cur_index += 1
-          cur = @raw_string[@cur_index]
-        end
-
-        @tokens << word
+      if symbol?(@cur)
+        parse_symbol
+      elsif letter?(@cur)
+        parse_word
       else
         @cur_index += 1
       end
+    end
+
+    def parse_symbol
+      @tokens << @cur
+      @cur_index += 1
+    end
+
+    def parse_word
+      word = ''
+
+      while (@cur_index < @raw_string.size) && alpha_num?(@cur)
+        word += @cur
+        @cur_index += 1
+        @cur = @raw_string[@cur_index]
+      end
+
+      @tokens << word
     end
   end
 end

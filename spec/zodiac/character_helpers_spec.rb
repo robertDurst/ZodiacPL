@@ -3,7 +3,7 @@
 require './src/zodiac/character_helpers'
 
 describe Zodiac::CharacterHelpers do
-  include Zodiac::CharacterHelpers
+  include described_class
 
   describe '.alpha_num?' do
     context 'when letter' do

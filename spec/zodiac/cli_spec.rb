@@ -7,7 +7,7 @@ describe Zodiac::CLI do
     context 'when passed compile run command' do
       it 'evaluates to true' do
         args = ['compile']
-        expect(Zodiac::CLI.new(args).compile?).to be true
+        expect(described_class.new(args).compile?).to be true
       end
     end
   end

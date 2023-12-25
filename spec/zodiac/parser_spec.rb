@@ -7,7 +7,7 @@ describe Zodiac::Parser do
     context 'when empty input' do
       it 'returns an empty array of tokens' do
         input = ''
-        parser = Zodiac::Parser.new(input)
+        parser = described_class.new(input)
 
         expected_output = []
 
@@ -16,30 +16,23 @@ describe Zodiac::Parser do
     end
 
     context 'when happy path' do
-      context 'when symbol' do
-        it 'parses symbols' do
-          input = ":[]{}\"\"\'\'"
-          parser = Zodiac::Parser.new(input)
+      it 'parses symbols' do
+        input = ":[]{}\"\"\'\'"
+        parser = described_class.new(input)
 
-          expected_output = [':', '[', ']', '{', '}', '"', '"', "'", "'"]
+        expected_output = [':', '[', ']', '{', '}', '"', '"', "'", "'"]
 
-          expect(parser.parse).to eq(expected_output)
-        end
+        expect(parser.parse).to eq(expected_output)
       end
 
-      context 'when word' do
-        it 'fetchs whole word' do
-          input = 'hello WorLD c4k3'
-          parser = Zodiac::Parser.new(input)
+      it 'parses whole word' do
+        input = 'hello WorLD c4k3'
+        parser = described_class.new(input)
 
-          expected_output = %w[hello WorLD c4k3]
+        expected_output = %w[hello WorLD c4k3]
 
-          expect(parser.parse).to eq(expected_output)
-        end
+        expect(parser.parse).to eq(expected_output)
       end
-    end
-
-    context 'when unexpected symbol' do
     end
   end
 end
