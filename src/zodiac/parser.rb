@@ -1,53 +1,192 @@
 # frozen_string_literal: true
+# Here is the syntax of Ruby in pseudo BNF. For more detail, see parse.y in Ruby distribution.
 
-require './src/zodiac/character_helpers'
+# PROGRAM		: COMPSTMT
 
-module Zodiac
-  # Base parsing class for the Zodiac language.
-  class Parser
-    include ::Zodiac::CharacterHelpers
+# COMPSTMT	: STMT (TERM EXPR)* [TERM]
 
-    def initialize(raw_string)
-      @raw_string = raw_string
-      @cur_index = 0
-      @tokens = []
-    end
+# STMT		: CALL do [`|' [BLOCK_VAR] `|'] COMPSTMT end
+#                 | undef FNAME
+# 		| alias FNAME FNAME
+# 		| STMT if EXPR
+# 		| STMT while EXPR
+# 		| STMT unless EXPR
+# 		| STMT until EXPR
+#                 | `BEGIN' `{' COMPSTMT `}'
+#                 | `END' `{' COMPSTMT `}'
+#                 | LHS `=' COMMAND [do [`|' [BLOCK_VAR] `|'] COMPSTMT end]
+# 		| EXPR
 
-    def parse
-      parse_next while @cur_index < @raw_string.size
+# EXPR		: MLHS `=' MRHS
+# 		| return CALL_ARGS
+# 		| yield CALL_ARGS
+# 		| EXPR and EXPR
+# 		| EXPR or EXPR
+# 		| not EXPR
+# 		| COMMAND
+# 		| `!' COMMAND
+# 		| ARG
 
-      @tokens
-    end
+# CALL		: FUNCTION
+#                 | COMMAND
 
-    private
+# COMMAND		: OPERATION CALL_ARGS
+# 		| PRIMARY `.' OPERATION CALL_ARGS
+# 		| PRIMARY `::' OPERATION CALL_ARGS
+# 		| super CALL_ARGS
 
-    def parse_next
-      @cur = @raw_string[@cur_index]
+# FUNCTION        : OPERATION [`(' [CALL_ARGS] `)']
+# 		| PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
+# 		| PRIMARY `::' OPERATION `(' [CALL_ARGS] `)'
+# 		| PRIMARY `.' OPERATION
+# 		| PRIMARY `::' OPERATION
+# 		| super `(' [CALL_ARGS] `)'
+# 		| super
 
-      if symbol?(@cur)
-        parse_symbol
-      elsif letter?(@cur)
-        parse_word
-      else
-        @cur_index += 1
-      end
-    end
+# ARG		: LHS `=' ARG
+# 		| LHS OP_ASGN ARG
+# 		| ARG `..' ARG
+# 		| ARG `...' ARG
+# 		| ARG `+' ARG
+# 		| ARG `-' ARG
+# 		| ARG `*' ARG
+# 		| ARG `/' ARG
+# 		| ARG `%' ARG
+# 		| ARG `**' ARG
+# 		| `+' ARG
+# 		| `-' ARG
+# 		| ARG `|' ARG
+# 		| ARG `^' ARG
+# 		| ARG `&' ARG
+# 		| ARG `<=>' ARG
+# 		| ARG `>' ARG
+# 		| ARG `>=' ARG
+# 		| ARG `<' ARG
+# 		| ARG `<=' ARG
+# 		| ARG `==' ARG
+# 		| ARG `===' ARG
+# 		| ARG `!=' ARG
+# 		| ARG `=~' ARG
+# 		| ARG `!~' ARG
+# 		| `!' ARG
+# 		| `~' ARG
+# 		| ARG `<<' ARG
+# 		| ARG `>>' ARG
+# 		| ARG `&&' ARG
+# 		| ARG `||' ARG
+# 		| defined? ARG
+# 		| PRIMARY
 
-    def parse_symbol
-      @tokens << @cur
-      @cur_index += 1
-    end
+# PRIMARY		: `(' COMPSTMT `)'
+# 		| LITERAL
+# 		| VARIABLE
+# 		| PRIMARY `::' IDENTIFIER
+# 		| `::' IDENTIFIER
+# 		| PRIMARY `[' [ARGS] `]'
+# 		| `[' [ARGS [`,']] `]'
+# 		| `{' [(ARGS|ASSOCS) [`,']] `}'
+# 		| return [`(' [CALL_ARGS] `)']
+# 		| yield [`(' [CALL_ARGS] `)']
+# 		| defined? `(' ARG `)'
+#                 | FUNCTION
+# 		| FUNCTION `{' [`|' [BLOCK_VAR] `|'] COMPSTMT `}'
+# 		| if EXPR THEN
+# 		  COMPSTMT
+# 		  (elsif EXPR THEN COMPSTMT)*
+# 		  [else COMPSTMT]
+# 		  end
+# 		| unless EXPR THEN
+# 		  COMPSTMT
+# 		  [else COMPSTMT]
+# 		  end
+# 		| while EXPR DO COMPSTMT end
+# 		| until EXPR DO COMPSTMT end
+# 		| case COMPSTMT
+# 		  (when WHEN_ARGS THEN COMPSTMT)+
+# 		  [else COMPSTMT]
+# 		  end
+# 		| for BLOCK_VAR in EXPR DO
+# 		  COMPSTMT
+# 		  end
+# 		| begin
+# 		  COMPSTMT
+# 		  [rescue [ARGS] DO COMPSTMT]+
+# 		  [else COMPSTMT]
+# 		  [ensure COMPSTMT]
+# 		  end
+# 		| class IDENTIFIER [`<' IDENTIFIER]
+# 		  COMPSTMT
+# 		  end
+# 		| module IDENTIFIER
+# 		  COMPSTMT
+# 		  end
+# 		| def FNAME ARGDECL
+# 		  COMPSTMT
+# 		  end
+# 		| def SINGLETON (`.'|`::') FNAME ARGDECL
+# 		  COMPSTMT
+# 		  end
 
-    def parse_word
-      word = ''
+# WHEN_ARGS	: ARGS [`,' `*' ARG]
+# 		| `*' ARG
 
-      while (@cur_index < @raw_string.size) && alpha_num?(@cur)
-        word += @cur
-        @cur_index += 1
-        @cur = @raw_string[@cur_index]
-      end
+# THEN		: TERM
+# 		| then
+# 		| TERM then
 
-      @tokens << word
-    end
-  end
-end
+# DO		: TERM
+# 		| do
+# 		| TERM do
+
+# BLOCK_VAR	: LHS
+# 		| MLHS
+
+# MLHS		: MLHS_ITEM `,' [MLHS_ITEM (`,' MLHS_ITEM)*] [`*' [LHS]]
+#                 | `*' LHS
+
+# MLHS_ITEM	: LHS
+# 		| '(' MLHS ')'
+
+# LHS		: VARIABLE
+# 		| PRIMARY `[' [ARGS] `]'
+# 		| PRIMARY `.' IDENTIFIER
+
+# MRHS		: ARGS [`,' `*' ARG]
+# 		| `*' ARG
+
+# CALL_ARGS	: ARGS
+# 		| ARGS [`,' ASSOCS] [`,' `*' ARG] [`,' `&' ARG]
+# 		| ASSOCS [`,' `*' ARG] [`,' `&' ARG]
+# 		| `*' ARG [`,' `&' ARG]
+# 		| `&' ARG
+# 		| COMMAND
+
+# ARGS 		: ARG (`,' ARG)*
+
+# ARGDECL		: `(' ARGLIST `)'
+# 		| ARGLIST TERM
+
+# ARGLIST		: IDENTIFIER(`,'IDENTIFIER)*[`,'`*'[IDENTIFIER]][`,'`&'IDENTIFIER]
+# 		| `*'IDENTIFIER[`,'`&'IDENTIFIER]
+# 		| [`&'IDENTIFIER]
+
+# SINGLETON	: VARIABLE
+# 		| `(' EXPR `)'
+
+# ASSOCS		: ASSOC (`,' ASSOC)*
+
+# ASSOC		: ARG `=>' ARG
+
+# VARIABLE	: VARNAME
+# 		| nil
+# 		| self
+
+# LITERAL		: numeric
+# 		| SYMBOL
+# 		| STRING
+# 		| STRING2
+# 		| HERE_DOC
+# 		| REGEXP
+
+# TERM		: `;'
+# 		| `\n'
