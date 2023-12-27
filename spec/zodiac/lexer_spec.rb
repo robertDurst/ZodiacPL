@@ -159,6 +159,31 @@ describe Zodiac::Lexer do
 
         expect(lexer.lex).to eq(expected_output)
       end
+
+      # file:
+      it 'lexs a full ruby program without throwing and returns' do
+        input = File.read('./spec/examples/rails_job_generator.rb')
+        lexer = described_class.new(input)
+
+        expect(lexer.lex.size).to be > 0
+      end
+
+      it 'lexs comments' do
+        input = <<~RUBY
+          # this is a comment
+          # this is another comment
+          # this is a third comment
+        RUBY
+        lexer = described_class.new(input)
+
+        expected_output = [
+          { kind: 'COMMENT', value: '# this is a comment' },
+          { kind: 'COMMENT', value: '# this is another comment' },
+          { kind: 'COMMENT', value: '# this is a third comment' }
+        ]
+
+        expect(lexer.lex).to eq(expected_output)
+      end
     end
   end
 end

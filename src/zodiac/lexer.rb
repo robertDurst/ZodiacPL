@@ -51,6 +51,8 @@ module Zodiac
           end
           @tokens << { kind: 'SYMBOL', value: word }
         end
+      elsif @cur == '#'
+        lex_comment
       elsif symbol?(@cur) && !@raw_string[@cur_index + 2].nil? && @raw_string[@cur_index..@cur_index + 2] == '<=>'
         @tokens << { kind: 'SYMBOL', value: '<=>' }
         @cur_index += 3
@@ -149,6 +151,20 @@ module Zodiac
       end
 
       @tokens << { kind: 'IDENTIFIER', value: word }
+    end
+
+    def lex_comment
+      word = '#'
+      @cur_index += 1
+      @cur = @raw_string[@cur_index]
+
+      while @cur != "\n"
+        word += @cur
+        @cur_index += 1
+        @cur = @raw_string[@cur_index]
+      end
+
+      @tokens << { kind: 'COMMENT', value: word }
     end
   end
 end
