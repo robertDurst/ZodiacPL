@@ -3,6 +3,8 @@
 require './spec/spec_helper'
 require './src/zodiac/lexer'
 
+# rubocop:disable RSpec/ExampleLength
+# rubocop:disable RSpec/NestedGroups
 describe Zodiac::Lexer do
   describe '#lex' do
     context 'when empty input' do
@@ -77,7 +79,7 @@ describe Zodiac::Lexer do
       end
 
       it 'lexs operators' do
-        input = '+ - * / % ** & | ^ << >> && ||   @@::..== === =~ +@ -@ [] <=>'
+        input = '+ - * / % ** & | ^ << >> && ||   @@::..== === =~ +@ -@ []'
         lexer = described_class.new(input)
 
         expected_output = [
@@ -102,8 +104,7 @@ describe Zodiac::Lexer do
           { kind: 'SYMBOL', value: '=~' },
           { kind: 'SYMBOL', value: '+@' },
           { kind: 'SYMBOL', value: '-@' },
-          { kind: 'SYMBOL', value: '[]' },
-          { kind: 'SYMBOL', value: '<=>' }
+          { kind: 'SYMBOL', value: '[]' }
         ]
 
         expect(lexer.lex).to eq(expected_output)
@@ -187,3 +188,5 @@ describe Zodiac::Lexer do
     end
   end
 end
+# rubocop:enable RSpec/ExampleLength
+# rubocop:enable RSpec/NestedGroups

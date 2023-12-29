@@ -197,8 +197,7 @@ module Zodiac
       @tokens = []
     end
 
-    def parse
-    end
+    def parse; end
 
     private
 
@@ -211,4 +210,5 @@ module Zodiac
     def parse_compstmt
       { kind: 'COMPSTMT', value: nil }
     end
+  end
 end

@@ -10,6 +10,7 @@ module Zodiac
   #   * FANCIER STRINGS like: `%'(`Q'|`q'|`x')char any_char* char
   #   * HERE_DOC
   #   * REGEXP
+  #   * '<=>'
   class Lexer
     include ::Zodiac::CharacterHelpers
 
@@ -27,64 +28,38 @@ module Zodiac
 
     private
 
-    def lex_next
-      @cur = @raw_string[@cur_index]
-
-      # TODO: fix this unclear logic
-      foo = @raw_string[@cur_index..].index(' ')
-      end_index = if foo.nil?
-                    @raw_string.size
-                  else
-                    foo + @cur_index
-                  end
-
-      if @cur == '='
-        word = ''
-        if !@raw_string[@cur_index + 1].nil? && @raw_string[@cur_index + 1] == '~'
-          @cur_index += 2
-          @tokens << { kind: 'SYMBOL', value: '=~' }
-        else
-          while @cur == '='
-            word += @cur
-            @cur_index += 1
-            @cur = @raw_string[@cur_index]
-          end
-          @tokens << { kind: 'SYMBOL', value: word }
-        end
-      elsif @cur == '#'
-        lex_comment
-      elsif symbol?(@cur) && !@raw_string[@cur_index + 2].nil? && @raw_string[@cur_index..@cur_index + 2] == '<=>'
-        @tokens << { kind: 'SYMBOL', value: '<=>' }
-        @cur_index += 3
-      elsif contains_equal_sign?(@raw_string[@cur_index..end_index]) && op_assign_symbol?(@cur) && ((end_index - @cur_index) < 4)
-        lex_op_assign
-      elsif symbol?(@cur)
-        if !@raw_string[@cur_index + 1].nil? && @raw_string[@cur_index..@cur_index + 1] == '+@'
-          @tokens << { kind: 'SYMBOL', value: '+@' }
-          @cur_index += 2
-        elsif !@raw_string[@cur_index + 1].nil? && @raw_string[@cur_index..@cur_index + 1] == '-@'
-          @tokens << { kind: 'SYMBOL', value: '-@' }
-          @cur_index += 2
-        elsif !@raw_string[@cur_index + 1].nil? && @raw_string[@cur_index..@cur_index + 1] == '[]'
-          @tokens << { kind: 'SYMBOL', value: '[]' }
-          @cur_index += 2
-        else
-          lex_symbol
-        end
-      elsif letter?(@cur) || underscore?(@cur)
-        lex_identifier
-      elsif string_start?(@cur)
-        lex_string
-      elsif number?(@cur)
-        lex_number
-      else
-        @cur_index += 1
-      end
+    def lexers
+      [
+        { lexer: 'lex_equals_sign_prefix', condition: proc { @cur == '=' } },
+        { lexer: 'lex_comment', condition: proc { @cur == '#' } },
+        { lexer: 'lex_op_assign', condition: proc { op_assign? } },
+        { lexer: 'lex_symbol', condition: proc { symbol?(@cur) } },
+        { lexer: 'lex_identifier', condition: proc { letter?(@cur) || underscore?(@cur) } },
+        { lexer: 'lex_string', condition: proc { string_start?(@cur) } },
+        { lexer: 'lex_number', condition: proc { number?(@cur) } }
+      ]
     end
 
+    def lex_next
+      @cur = @raw_string[@cur_index]
+      @next_cur = @raw_string[@cur_index + 1]
+      @word = ''
+
+      lexers.each do |bar|
+        if bar[:condition].call
+          send(bar[:lexer])
+          return true
+        end
+      end
+
+      @cur_index += 1
+    end
+
+    ### lexers ###
+
     def lex_symbol
-      if @cur == @raw_string[@cur_index + 1] && double_symbol?(@raw_string[@cur_index + 1])
-        @tokens << { kind: 'SYMBOL', value:  @cur + @raw_string[@cur_index + 1] }
+      if !@next_cur.nil? && complex_symbol?
+        @tokens << { kind: 'SYMBOL', value: @cur + @next_cur }
         @cur_index += 2
       else
         @tokens << { kind: 'SYMBOL', value: @cur }
@@ -92,79 +67,81 @@ module Zodiac
       end
     end
 
-    # OP_ASGN		: `+=' | `-=' | `*=' | `/=' | `%=' | `**='
-    # | `&=' | `|=' | `^=' | `<<=' | `>>='
-    # | `&&=' | `||=' | '[]='
+    def lex_equals_sign_prefix
+      if !@next_cur.nil? && @next_cur == '~'
+        @cur_index += 2
+        @word = '=~'
+      else
+        continue_until_stop { @cur == '=' }
+      end
+
+      @tokens << { kind: 'SYMBOL', value: @word }
+    end
+
     def lex_op_assign
       end_index = @raw_string[@cur_index..].index('=') + @cur_index
       @tokens << { kind: 'OP_ASGN', value: @raw_string[@cur_index..end_index] }
       @cur_index = end_index + 1
     end
 
-    # STRING		: `"' any_char* `"'
-    # | `'' any_char* `''
-    # | ``' any_char* ``'
     def lex_string
-      rest_of_string = @raw_string[@cur_index + 1..]
-      raise LexError, 'String not terminated' unless rest_of_string.include?(@cur)
+      raise LexError, 'String not terminated' unless @raw_string[@cur_index + 1..].include?(@cur)
 
-      end_index = @raw_string[@cur_index + 1..].index(@cur) + @cur_index + 1
-      @tokens << { kind: 'STRING', value: @raw_string[@cur_index..end_index] }
-      @cur_index = end_index + 1
+      append_word_and_iterate
+      continue_until_stop { !string_start?(@cur) }
+      append_word_and_iterate
+
+      @tokens << { kind: 'STRING', value: @word }
     end
 
-    # NUMBER		: `0' | (`1'..'9') (`0'..'9')*
-    # | decimal_digit decimal_digit* (`.' decimal_digit decimal_digit*)?
     def lex_number
-      word = lex_single_number
+      continue_until_stop { number?(@cur) }
 
-      if @cur == '.'
-        word += @cur
-        @cur_index += 1
-        @cur = @raw_string[@cur_index]
-        word += lex_single_number
-      end
+      # presense of '.' means it is a decimal
+      lex_decimal if @cur == '.'
 
-      @tokens << { kind: 'NUMBER', value: word }
+      @tokens << { kind: 'NUMBER', value: @word }
     end
 
-    def lex_single_number
-      word = ''
-
-      while (@cur_index < @raw_string.size) && number?(@cur)
-        word += @cur
-        @cur_index += 1
-        @cur = @raw_string[@cur_index]
-      end
-
-      word
+    def lex_decimal
+      append_word_and_iterate
+      continue_until_stop { number?(@cur) }
     end
 
-    # IDENTIFIER is the sqeunce of characters in the pattern of /[a-zA-Z_][a-zA-Z0-9_]*/.
     def lex_identifier
-      word = ''
-
-      while (@cur_index < @raw_string.size) && alpha_num?(@cur)
-        word += @cur
-        @cur_index += 1
-        @cur = @raw_string[@cur_index]
-      end
-
-      @tokens << { kind: 'IDENTIFIER', value: word }
+      @tokens << { kind: 'IDENTIFIER', value: continue_until_stop { alpha_num?(@cur) } }
     end
 
     def lex_comment
-      word = '#'
+      @tokens << { kind: 'COMMENT', value: continue_until_stop { @cur != "\n" } }
+    end
+
+    ### Helpers ###
+
+    def op_assign?
+      last_space_index = @raw_string[@cur_index..].index(' ')
+      end_index = last_space_index.nil? ? @raw_string.size : last_space_index + @cur_index
+
+      contains_equal_sign?(@raw_string[@cur_index..end_index]) &&
+        op_assign_symbol?(@cur) && ((end_index - @cur_index) < 4)
+    end
+
+    def complex_symbol?
+      %w(+@ -@ []).include?(@cur + @next_cur) || (double_symbol?(@next_cur) && @cur == @next_cur)
+    end
+
+    def append_word_and_iterate
+      @word += @cur
       @cur_index += 1
       @cur = @raw_string[@cur_index]
 
-      while @cur != "\n"
-        word += @cur
-        @cur_index += 1
-        @cur = @raw_string[@cur_index]
-      end
+      @word
+    end
 
-      @tokens << { kind: 'COMMENT', value: word }
+    def continue_until_stop
+      append_word_and_iterate while @cur_index < @raw_string.size && yield
+
+      @word
     end
   end
 end
