@@ -3,6 +3,10 @@
 module Zodiac
   # Character helper methods common to parsing within the Zodiac language compiler.
   module CharacterHelpers
+    def comment?(value)
+      value == '#'
+    end
+
     def string_start?(value)
       ['"', "'", '`'].include?(value)
     end
@@ -20,7 +24,8 @@ module Zodiac
     end
 
     def complex_symbol?(value, next_value)
-      !next_value.nil? && %w(+@ -@ [] =~).include?(value + next_value) || (double_symbol?(value) && value == next_value)
+      (!next_value.nil? && %w(+@ -@ []
+                              =~).include?(value + next_value)) || (double_symbol?(value) && value == next_value)
     end
 
     def contains_equal_sign?(value)
@@ -29,6 +34,10 @@ module Zodiac
 
     def alpha_num?(value)
       letter?(value) || number?(value) || underscore?(value)
+    end
+
+    def alpha?(value)
+      letter?(value) || underscore?(value)
     end
 
     def letter?(value)

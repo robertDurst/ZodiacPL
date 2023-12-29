@@ -43,4 +43,28 @@ class StringCharacterIterator
 
     equals_sign_is_close_enough && starts_with_op_assign_char
   end
+
+  def take_until(condition, before: 0, after: 0)
+    word = ''
+
+    before.times { word += iterate }
+
+    word += iterate while not_finished? && !condition.call(peek)
+
+    after.times { word += iterate }
+
+    word
+  end
+
+  def take_until_not(condition, before: 0, after: 0)
+    word = ''
+
+    before.times { word += iterate }
+
+    word += iterate while not_finished? && condition.call(peek)
+
+    after.times { word += iterate }
+
+    word
+  end
 end
