@@ -8,7 +8,7 @@ module Zodiac
     end
 
     def symbol?(value)
-      '.:[]{}+-*/%&|^><@~$!?:'.include?(value)
+      '=.:[]{}+-*/%&|^><@~$!?:'.include?(value)
     end
 
     def op_assign_symbol?(value)
@@ -16,7 +16,11 @@ module Zodiac
     end
 
     def double_symbol?(value)
-      '*<>|&@:.'.include?(value)
+      '=*<>|&@:.'.include?(value)
+    end
+
+    def complex_symbol?(value, next_value)
+      !next_value.nil? && %w(+@ -@ [] =~).include?(value + next_value) || (double_symbol?(value) && value == next_value)
     end
 
     def contains_equal_sign?(value)

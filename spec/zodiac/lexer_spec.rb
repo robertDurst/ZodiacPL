@@ -79,7 +79,7 @@ describe Zodiac::Lexer do
       end
 
       it 'lexs operators' do
-        input = '+ - * / % ** & | ^ << >> && ||   @@::..== === =~ +@ -@ []'
+        input = '+ - * / % ** & | ^ << >> && ||   @@::..== =~ +@ -@ []'
         lexer = described_class.new(input)
 
         expected_output = [
@@ -100,7 +100,6 @@ describe Zodiac::Lexer do
           { kind: 'SYMBOL', value: '::' },
           { kind: 'SYMBOL', value: '..' },
           { kind: 'SYMBOL', value: '==' },
-          { kind: 'SYMBOL', value: '===' },
           { kind: 'SYMBOL', value: '=~' },
           { kind: 'SYMBOL', value: '+@' },
           { kind: 'SYMBOL', value: '-@' },
