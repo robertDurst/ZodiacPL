@@ -17,15 +17,15 @@ module Zodiac
     include ::Zodiac::CharacterHelpers
 
     def initialize(raw_string)
-      @tokens = []
-      @word = ''
       @input_iterator = StringCharacterIterator.new(raw_string)
     end
 
     def lex
-      lex_next while @input_iterator.not_finished?
+      tokens = []
 
-      @tokens
+      tokens << lex_next while @input_iterator.not_finished?
+
+      tokens.compact
     end
 
     private
@@ -44,81 +44,69 @@ module Zodiac
     end
 
     def lex_next
-      reset_lex_iteration_state
-
       lexers.each do |lexer|
         next unless lexer[:condition].call(@input_iterator.peek)
 
-        send(lexer[:lexer])
-        @tokens << { kind: lexer[:token_kind], value: @word }
-        return true
+        return { kind: lexer[:token_kind], value: send(lexer[:lexer]) }
       end
 
       # if we get here, we didn't lex anything, i.e. unrecognized character pattern
       @input_iterator.iterate
+
+      nil
     end
 
     ### lexers ###
 
     def lex_symbol
-      @word = @input_iterator.peek
+      word = @input_iterator.peek
       @input_iterator.iterate
 
-      return unless complex_symbol?(@word, @input_iterator.peek)
+      return word unless complex_symbol?(word, @input_iterator.peek)
 
-      @word += @input_iterator.peek
+      word += @input_iterator.peek
       @input_iterator.iterate
+
+      word
     end
 
     def lex_op_assign
-      continue_until_stop(after: 1) { @input_iterator.peek != '=' }
+      take_until(after: 1) { @input_iterator.peek != '=' }
     end
 
     def lex_string
-      unless @input_iterator.rest_includes?(@input_iterator.peek)
-        raise LexError,
-              'String not terminated'
-      end
+      raise LexError, 'String not terminated' unless @input_iterator.rest_includes?(@input_iterator.peek)
 
-      continue_until_stop(before: 1, after: 1) { !string_start?(@input_iterator.peek) }
+      take_until(before: 1, after: 1) { !string_start?(@input_iterator.peek) }
     end
 
     def lex_number
-      continue_until_stop { number?(@input_iterator.peek) }
+      word = take_until { number?(@input_iterator.peek) }
 
-      return unless @input_iterator.peek == '.'
+      return word += take_until(before: 1) { number?(@input_iterator.peek) } if @input_iterator.peek == '.'
 
-      continue_until_stop(before: 1) do
-        number?(@input_iterator.peek)
-      end
+      word
     end
 
     def lex_identifier
-      continue_until_stop { alpha_num?(@input_iterator.peek) }
+      take_until { alpha_num?(@input_iterator.peek) }
     end
 
     def lex_comment
-      continue_until_stop { @input_iterator.peek != "\n" }
+      take_until { @input_iterator.peek != "\n" }
     end
 
     ### Helpers ###
-    def append_word_and_iterate
-      @word += @input_iterator.peek
-      @input_iterator.iterate
-    end
+    def take_until(before: 0, after: 0)
+      word = ''
 
-    def continue_until_stop(before: 0, after: 0)
-      before.times { append_word_and_iterate }
+      before.times { word += @input_iterator.iterate }
 
-      append_word_and_iterate while @input_iterator.not_finished? && yield
+      word += @input_iterator.iterate while @input_iterator.not_finished? && yield
 
-      after.times { append_word_and_iterate }
+      after.times { word += @input_iterator.iterate }
 
-      @word
-    end
-
-    def reset_lex_iteration_state
-      @word = ''
+      word
     end
   end
 end

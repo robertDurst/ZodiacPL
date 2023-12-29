@@ -13,7 +13,10 @@ class StringCharacterIterator
   end
 
   def iterate
+    old_top = peek
     @raw_string = @raw_string[1..]
+
+    old_top
   end
 
   def peek
