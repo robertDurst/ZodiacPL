@@ -197,13 +197,19 @@ module Zodiac
       @tokens = []
     end
 
-    def parse; end
+    def parse
+      parse_program
+    end
 
     private
 
     # PROGRAM		: COMPSTMT
     def parse_program
-      { kind: 'PROGRAM', value: parse_compstmt }
+      cmp_stmts = []
+
+      cmp_stmts << parse_compstmt while @cur_index < @raw_string.length
+
+      { kind: 'PROGRAM', value: cmp_stmts }
     end
 
     # COMPSTMT	: STMT (TERM EXPR)* [TERM]
