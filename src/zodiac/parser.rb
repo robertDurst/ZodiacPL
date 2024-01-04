@@ -1,47 +1,11 @@
 # frozen_string_literal: true
 
+require './src/zodiac/lexer'
+
 module Zodiac
   # Base parsing class for the Zodiac language.
 
   # Here is the syntax of Ruby in pseudo BNF. For more detail, see parse.y in Ruby distribution.
-
-  # STMT		: CALL do [`|' [BLOCK_VAR] `|'] COMPSTMT end
-  #                 | undef FNAME
-  # 		| alias FNAME FNAME
-  # 		| STMT if EXPR
-  # 		| STMT while EXPR
-  # 		| STMT unless EXPR
-  # 		| STMT until EXPR
-  #                 | `BEGIN' `{' COMPSTMT `}'
-  #                 | `END' `{' COMPSTMT `}'
-  #                 | LHS `=' COMMAND [do [`|' [BLOCK_VAR] `|'] COMPSTMT end]
-  # 		| EXPR
-
-  # EXPR		: MLHS `=' MRHS
-  # 		| return CALL_ARGS
-  # 		| yield CALL_ARGS
-  # 		| EXPR and EXPR
-  # 		| EXPR or EXPR
-  # 		| not EXPR
-  # 		| COMMAND
-  # 		| `!' COMMAND
-  # 		| ARG
-
-  # CALL		: FUNCTION
-  #                 | COMMAND
-
-  # COMMAND		: OPERATION CALL_ARGS
-  # 		| PRIMARY `.' OPERATION CALL_ARGS
-  # 		| PRIMARY `::' OPERATION CALL_ARGS
-  # 		| super CALL_ARGS
-
-  # FUNCTION        : OPERATION [`(' [CALL_ARGS] `)']
-  # 		| PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
-  # 		| PRIMARY `::' OPERATION `(' [CALL_ARGS] `)'
-  # 		| PRIMARY `.' OPERATION
-  # 		| PRIMARY `::' OPERATION
-  # 		| super `(' [CALL_ARGS] `)'
-  # 		| super
 
   # ARG		: LHS `=' ARG
   # 		| LHS OP_ASGN ARG
@@ -187,14 +151,14 @@ module Zodiac
   # 		| STRING2
   # 		| HERE_DOC
   # 		| REGEXP
-
-  # TERM		: `;'
-  # 		| `\n'
   class Parser
     def initialize(raw_string)
       @raw_string = raw_string
       @cur_index = 0
-      @tokens = []
+
+      @tokens = Lexer.new(raw_string).lex
+
+      @tree = []
     end
 
     def parse
@@ -207,7 +171,7 @@ module Zodiac
     def parse_program
       cmp_stmts = []
 
-      cmp_stmts << parse_compstmt while @cur_index < @raw_string.length
+      cmp_stmts << parse_compstmt while @cur_index < @tokens.length
 
       { kind: 'PROGRAM', value: cmp_stmts }
     end
@@ -215,6 +179,65 @@ module Zodiac
     # COMPSTMT	: STMT (TERM EXPR)* [TERM]
     def parse_compstmt
       { kind: 'COMPSTMT', value: nil }
+    end
+
+    # STMT		: CALL do [`|' [BLOCK_VAR] `|'] COMPSTMT end
+    #                 | undef FNAME
+    # 		| alias FNAME FNAME
+    # 		| STMT if EXPR
+    # 		| STMT while EXPR
+    # 		| STMT unless EXPR
+    # 		| STMT until EXPR
+    #                 | `BEGIN' `{' COMPSTMT `}'
+    #                 | `END' `{' COMPSTMT `}'
+    #                 | LHS `=' COMMAND [do [`|' [BLOCK_VAR] `|'] COMPSTMT end]
+    # 		| EXPR
+    def parse_stmt
+      { kind: 'STMT', value: nil }
+    end
+
+    # EXPR		: MLHS `=' MRHS
+    # 		| return CALL_ARGS
+    # 		| yield CALL_ARGS
+    # 		| EXPR and EXPR
+    # 		| EXPR or EXPR
+    # 		| not EXPR
+    # 		| COMMAND
+    # 		| `!' COMMAND
+    # 		| ARG
+    def parse_expr
+      { kind: 'EXPR', value: nil }
+    end
+
+    # TERM		: `;'
+    # 		| `\n'
+    def parse_term
+      { kind: 'TERM', value: nil }
+    end
+
+    # CALL		: FUNCTION
+    #                 | COMMAND
+    def parse_call
+      { kind: 'CALL', value: nil }
+    end
+
+    # COMMAND		: OPERATION CALL_ARGS
+    # 		| PRIMARY `.' OPERATION CALL_ARGS
+    # 		| PRIMARY `::' OPERATION CALL_ARGS
+    # 		| super CALL_ARGS
+    def parse_command
+      { kind: 'COMMAND', value: nil }
+    end
+
+    # FUNCTION        : OPERATION [`(' [CALL_ARGS] `)']
+    # 		| PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
+    # 		| PRIMARY `::' OPERATION `(' [CALL_ARGS] `)'
+    # 		| PRIMARY `.' OPERATION
+    # 		| PRIMARY `::' OPERATION
+    # 		| super `(' [CALL_ARGS] `)'
+    # 		| super
+    def parse_function
+      { kind: 'FUNCTION', value: nil }
     end
   end
 end
