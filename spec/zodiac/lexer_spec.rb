@@ -29,6 +29,15 @@ describe Zodiac::Lexer do
     end
 
     context 'when happy path' do
+      it 'lexs newlines' do
+        input = "\n"
+        lexer = described_class.new(input)
+
+        expected_output = [{ kind: 'NEWLINE', value: "\n" }]
+
+        expect(lexer.lex).to eq(expected_output)
+      end
+
       it 'lexs symbols' do
         input = ':[ ]{}@~$!?:='
         lexer = described_class.new(input)
@@ -178,8 +187,11 @@ describe Zodiac::Lexer do
 
         expected_output = [
           { kind: 'COMMENT', value: '# this is a comment' },
+          { kind: 'NEWLINE', value: "\n" },
           { kind: 'COMMENT', value: '# this is another comment' },
-          { kind: 'COMMENT', value: '# this is a third comment' }
+          { kind: 'NEWLINE', value: "\n" },
+          { kind: 'COMMENT', value: '# this is a third comment' },
+          { kind: 'NEWLINE', value: "\n" }
         ]
 
         expect(lexer.lex).to eq(expected_output)

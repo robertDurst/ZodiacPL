@@ -21,7 +21,7 @@ module Zodiac
     def initialize(raw_string)
       @input_iterator = StringCharacterIterator.new(raw_string)
       @lexer_evaluator_engine = LexerEvaluatorEngine.new(
-        [comment_lexer, op_assign_lexer, symbol_lexer, identifier_lexer, string_lexer, number_lexer],
+        [comment_lexer, newline_lexer, op_assign_lexer, symbol_lexer, identifier_lexer, string_lexer, number_lexer],
         proc { @input_iterator.iterate }
       )
     end
@@ -37,13 +37,25 @@ module Zodiac
     private
 
     ### Comment lexing ###
-
     def comment_lexer
       LexerEvaluator.new('COMMENT', method(:comment?), method(:lex_comment))
     end
 
     def lex_comment
       @input_iterator.take_until(proc { |val| val == "\n" })
+    end
+
+    ### Newline lexing ###
+    def newline_lexer
+      LexerEvaluator.new('NEWLINE', method(:newline?), method(:lex_newline))
+    end
+
+    def lex_newline
+      @input_iterator.iterate
+    end
+
+    def newline?(_value)
+      @input_iterator.peek == "\n"
     end
 
     ### Operator Assignment lexing ###

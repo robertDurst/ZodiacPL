@@ -173,7 +173,7 @@ module Zodiac
 
       cmp_stmts << parse_compstmt while @cur_index < @tokens.length
 
-      { kind: 'PROGRAM', value: cmp_stmts }
+      { kind: 'PROGRAM', cmp_stmts: }
     end
 
     # COMPSTMT	: STMT (TERM EXPR)* [TERM]
@@ -212,7 +212,14 @@ module Zodiac
     # TERM		: `;'
     # 		| `\n'
     def parse_term
-      { kind: 'TERM', value: nil }
+      cur_token = @tokens[@cur_index]
+
+      unless cur_token[:kind] == 'NEWLINE' || (cur_token[:kind] == 'SYMBOL' && cur_token[:value] == ';')
+        raise ParseError,
+              "Expected a newline or a semicolon. Received #{cur_token[:value]}"
+      end
+
+      { kind: 'TERM', value: cur_token[:value] }
     end
 
     # CALL		: FUNCTION

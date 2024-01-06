@@ -10,7 +10,7 @@ describe Zodiac::Parser do
         parser = described_class.new('')
 
         actual = parser.parse
-        expected = { kind: 'PROGRAM', value: [] }
+        expected = { kind: 'PROGRAM', cmp_stmts: [] }
 
         expect(actual).to eq(expected)
       end
