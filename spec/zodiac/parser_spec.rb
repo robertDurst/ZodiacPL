@@ -15,5 +15,19 @@ describe Zodiac::Parser do
         expect(actual).to eq(expected)
       end
     end
+
+    context 'when simple expression' do
+      xit 'returns simple expression' do
+        parser = described_class.new('1 + 2')
+
+        actual = parser.parse
+        expected = {
+          kind: 'PROGRAM',
+          cmp_stmts: []
+        }
+
+        expect(actual).to eq(expected)
+      end
+    end
   end
 end
