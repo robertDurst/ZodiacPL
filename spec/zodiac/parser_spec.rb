@@ -30,4 +30,64 @@ describe Zodiac::Parser do
       end
     end
   end
+
+  describe '.parse_literal' do
+    context 'when parse literal' do
+      context 'when number' do
+        it 'returns literal' do
+          parser = described_class.new('1')
+
+          actual = parser.parse_literal
+          expected = {
+            kind: 'LITERAL',
+            value: 1
+          }
+
+          expect(actual).to eq(expected)
+        end
+      end
+
+      context 'when decimal' do
+        it 'returns literal' do
+          parser = described_class.new('1.1')
+
+          actual = parser.parse_literal
+          expected = {
+            kind: 'LITERAL',
+            value: 1.1
+          }
+
+          expect(actual).to eq(expected)
+        end
+      end
+
+      context 'when string' do
+        it 'returns literal' do
+          parser = described_class.new('"hello"')
+
+          actual = parser.parse_literal
+          expected = {
+            kind: 'LITERAL',
+            value: 'hello'
+          }
+
+          expect(actual).to eq(expected)
+        end
+      end
+
+      context 'when symbol' do
+        it 'returns literal' do
+          parser = described_class.new(':hello')
+
+          actual = parser.parse_literal
+          expected = {
+            kind: 'LITERAL',
+            value: :hello
+          }
+
+          expect(actual).to eq(expected)
+        end
+      end
+    end
+  end
 end

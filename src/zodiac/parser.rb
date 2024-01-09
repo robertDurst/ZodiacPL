@@ -18,8 +18,6 @@ module Zodiac
       parse_program
     end
 
-    private
-
     # PROGRAM		: COMPSTMT
     def parse_program
       cmp_stmts = []
@@ -303,10 +301,23 @@ module Zodiac
     # 		| SYMBOL
     # 		| STRING
     # 		| STRING2
-    # 		| HERE_DOC
-    # 		| REGEXP
+    # 		| HERE_DOC (TOD)
+    # 		| REGEXP (TODO)
     def parse_literal
-      { kind: 'LITERAL', value: nil }
+      cur_token = @tokens[@cur_index]
+
+      if cur_token[:kind] == 'NUMBER'
+        { kind: 'LITERAL', value: cur_token[:value].include?('.') ? cur_token[:value].to_f : cur_token[:value].to_i }
+      elsif cur_token[:kind] == 'SYMBOL' &&
+            cur_token[:value].start_with?(':') &&
+            @tokens[@cur_index + 1][:kind] == 'IDENTIFIER'
+
+        { kind: 'LITERAL', value: @tokens[@cur_index + 1][:value].to_sym }
+      elsif cur_token[:kind] == 'STRING'
+        { kind: 'LITERAL', value: cur_token[:value].gsub('"', '') }
+      else
+        raise ParseError, "Expected a literal. Received #{cur_token[:value]}"
+      end
     end
   end
 end
