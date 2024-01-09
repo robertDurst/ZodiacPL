@@ -2,6 +2,7 @@
 
 require './spec/spec_helper'
 require './src/zodiac/parser'
+require './src/zodiac/parse_error'
 
 describe Zodiac::Parser do
   describe '.parse' do
@@ -15,19 +16,31 @@ describe Zodiac::Parser do
         expect(actual).to eq(expected)
       end
     end
+  end
 
-    context 'when simple expression' do
-      xit 'returns simple expression' do
-        parser = described_class.new('1 + 2')
+  describe '.parse_term' do
+    it 'parses newline' do
+      parser = described_class.new("\n")
 
-        actual = parser.parse
-        expected = {
-          kind: 'PROGRAM',
-          cmp_stmts: []
-        }
+      actual = parser.parse_term
+      expected = { kind: 'TERM', value: "\n" }
 
-        expect(actual).to eq(expected)
-      end
+      expect(actual).to eq(expected)
+    end
+
+    it 'parses semicolon' do
+      parser = described_class.new(';')
+
+      actual = parser.parse_term
+      expected = { kind: 'TERM', value: ';' }
+
+      expect(actual).to eq(expected)
+    end
+
+    it 'raises error when not newline or semicolon' do
+      expect do
+        described_class.new('1').parse_term
+      end.to raise_error(Zodiac::ParseError)
     end
   end
 
@@ -39,7 +52,7 @@ describe Zodiac::Parser do
 
           actual = parser.parse_literal
           expected = {
-            kind: 'LITERAL',
+            kind: 'LITERAL_NUMBER',
             value: 1
           }
 
@@ -53,7 +66,7 @@ describe Zodiac::Parser do
 
           actual = parser.parse_literal
           expected = {
-            kind: 'LITERAL',
+            kind: 'LITERAL_DECIMAL',
             value: 1.1
           }
 
@@ -67,7 +80,7 @@ describe Zodiac::Parser do
 
           actual = parser.parse_literal
           expected = {
-            kind: 'LITERAL',
+            kind: 'LITERAL_STRING',
             value: 'hello'
           }
 
@@ -81,7 +94,7 @@ describe Zodiac::Parser do
 
           actual = parser.parse_literal
           expected = {
-            kind: 'LITERAL',
+            kind: 'LITERAL_SYMBOL',
             value: :hello
           }
 

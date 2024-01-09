@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require './src/zodiac/lexer'
+require './src/zodiac/parse_error'
 
 module Zodiac
   # Base parsing class for the Zodiac language.
@@ -307,14 +308,18 @@ module Zodiac
       cur_token = @tokens[@cur_index]
 
       if cur_token[:kind] == 'NUMBER'
-        { kind: 'LITERAL', value: cur_token[:value].include?('.') ? cur_token[:value].to_f : cur_token[:value].to_i }
+        if cur_token[:value].include?('.')
+          { kind: 'LITERAL_DECIMAL', value: cur_token[:value].to_f }
+        else
+          { kind: 'LITERAL_NUMBER', value: cur_token[:value].to_i }
+        end
       elsif cur_token[:kind] == 'SYMBOL' &&
             cur_token[:value].start_with?(':') &&
             @tokens[@cur_index + 1][:kind] == 'IDENTIFIER'
 
-        { kind: 'LITERAL', value: @tokens[@cur_index + 1][:value].to_sym }
+        { kind: 'LITERAL_SYMBOL', value: @tokens[@cur_index + 1][:value].to_sym }
       elsif cur_token[:kind] == 'STRING'
-        { kind: 'LITERAL', value: cur_token[:value].gsub('"', '') }
+        { kind: 'LITERAL_STRING', value: cur_token[:value].gsub('"', '') }
       else
         raise ParseError, "Expected a literal. Received #{cur_token[:value]}"
       end

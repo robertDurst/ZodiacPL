@@ -12,7 +12,7 @@ module Zodiac
     end
 
     def symbol?(value)
-      '=.:[]{}+-*/%&|^><@~$!?:'.include?(value)
+      '=.:[]{}+-*/%&|^><@~$!?;'.include?(value)
     end
 
     def op_assign_symbol?(value)
